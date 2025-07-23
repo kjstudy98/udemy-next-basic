@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { ContactSchema } from "@/validations/contact";
+import { prisma } from "../prisma";
 
 // ActionStateの型定義
 type ActionState = {
@@ -35,6 +36,27 @@ export async function submitContactForm(
   }
 
   // DB登録
+  const existingRecord = await prisma.contact.findUnique({
+    where: { email },
+  });
+  // メアドの存在チェック
+  if (existingRecord) {
+    return {
+      success: false,
+      errors: {
+        name: [],
+        email: ["このメールアドレスは登録されています"],
+      },
+    };
+  }
+
+  // データ登録
+  await prisma.contact.create({
+    data: {
+      name,
+      email,
+    },
+  });
 
   console.log("送信されたデータ：", { name, email });
   redirect("/contacts/complete");
